@@ -1,0 +1,22 @@
+llm:
+  active_provider: "deepseek"
+
+  deepseek:
+    provider: "deepseek"
+    api_key: "sk-106cc89f9ac442adbbfe60d104d7dcee"
+    base_url: "https://api.deepseek.com/v1"
+    model: "deepseek-chat"
+
+  temperature: 0.85
+  max_tokens: 10000
+  timeout: 7200
+
+context:
+  max_tokens: 40000
+  compress_threshold: 0.8
+  history_limit: 50
+  recent_history_limit: 10
+
+streaming:
+  max_tool_calls: 200
+  max_reflection_iterations: 3

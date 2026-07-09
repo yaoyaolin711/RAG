@@ -1,0 +1,15 @@
+pypdf2
+pypdf
+openpyxl
+pandas
+langchain
+langchain-community
+langchain-chroma
+langchain-text-splitters
+langchain-openai
+chromadb
+sentence-transformers
+python-docx
+pytest
+streamlit
+dashscope
