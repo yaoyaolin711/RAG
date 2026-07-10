@@ -10,20 +10,19 @@ if str(_APP_DIR) not in sys.path:
 import streamlit as st
 
 from settings import (
-    ALIYUN_API_KEY_ENV,
-    CHROMA_CLIENT_MODE,
-    CHROMA_PATH,
+    DEEPSEEK_KEY_ENV,
     KB_DOC_NAME,
     LLM_MODEL_NAME,
+    MILVUS_URI,
     RAG_COLLECTION_NAME,
     RAG_RELEVANCE_THRESHOLD,
     UPGRADE_KEYWORD_GROUPS,
     UPGRADE_TO_A_KEYWORDS,
-    get_aliyun_api_key,
+    get_deepseek_key,
 )
 from services.models import ReplyMode, RouteType, UserTag
 from services.wechat_handler import WeChatMessageHandler
-from vectorstore import check_chroma_connection
+from vectorstore import check_milvus_connection
 
 st.set_page_config(
     page_title="BD 微信智能客服 · 模拟台",
@@ -243,15 +242,10 @@ def chunk_type_badge(chunk_type: str) -> str:
 
 def get_kb_stats() -> dict:
     try:
-        from vectorstore import get_chroma_client
+        from vectorstore import get_collection_chunk_types, get_collection_count
         from settings import RAG_COLLECTION_NAME
-        col = get_chroma_client().get_collection(RAG_COLLECTION_NAME)
-        count = col.count()
-        peek = col.peek(limit=100)
-        types: dict[str, int] = {}
-        for meta in peek.get("metadatas") or []:
-            t = meta.get("chunk_type", "unknown")
-            types[t] = types.get(t, 0) + 1
+        count = get_collection_count(RAG_COLLECTION_NAME)
+        types = get_collection_chunk_types(RAG_COLLECTION_NAME)
         return {"count": count, "types": types, "ok": True}
     except Exception:
         return {"count": 0, "types": {}, "ok": False}
@@ -539,13 +533,13 @@ def render_sidebar():
 
         st.markdown("---")
         st.markdown("### ⚙️ 系统信息")
-        api_ok = "已配置" if os.getenv(ALIYUN_API_KEY_ENV) else "未检测到"
+        api_ok = "已配置" if os.getenv(DEEPSEEK_KEY_ENV) else "未检测到"
         st.markdown(
             f"""
             <div class="jc-tip">🔑 API Key<br><b>{api_ok}</b></div>
             <div class="jc-tip">🤖 大模型<br><b>{LLM_MODEL_NAME}</b></div>
             <div class="jc-tip">🧠 Embedding<br><b>BGE-M3 本地</b></div>
-            <div class="jc-tip">🗄️ 向量库<br><b>{RAG_COLLECTION_NAME}</b><br>{CHROMA_CLIENT_MODE} · {CHROMA_PATH}</div>
+            <div class="jc-tip">🗄️ 向量库<br><b>{RAG_COLLECTION_NAME}</b><br>Milvus · {MILVUS_URI}</div>
             <div class="jc-tip">📄 知识库<br><b>{KB_DOC_NAME}</b></div>
             """,
             unsafe_allow_html=True,
@@ -614,22 +608,22 @@ def main():
 
     try:
         if not st.session_state.handler_ready:
-            with st.spinner("正在连接 Chroma 并初始化分流服务..."):
-                check_chroma_connection()
-                get_aliyun_api_key()
+            with st.spinner("正在连接 Milvus 并初始化分流服务..."):
+                check_milvus_connection()
+                get_deepseek_key()
                 st.session_state.wechat_handler = WeChatMessageHandler()
                 st.session_state.handler_ready = True
     except Exception as e:
         render_hero()
         err = str(e)
         hints = []
-        if "ALIYUN_API_KEY" in err or ("环境变量" in err and isinstance(e, ValueError)):
-            hints.append(f'请设置 $env:ALIYUN_API_KEY="你的Key" 后重启 Streamlit')
-        if "Chroma" in err or "chroma" in err.lower():
-            hints.append(f"请确认 Chroma 路径存在：{CHROMA_PATH}")
+        if "DEEPSEEK_KEY" in err or ("环境变量" in err and isinstance(e, ValueError)):
+            hints.append(f'请设置 $env:DEEPSEEK_KEY="你的Key" 后重启 Streamlit')
+        if "Milvus" in err or "milvus" in err.lower():
+            hints.append(f"请确认 Milvus 路径存在：{MILVUS_URI}")
             hints.append("请运行：python scripts/ingest_bd_docx.py")
         if not hints:
-            hints = [f"设置 {ALIYUN_API_KEY_ENV}", f"确认 {CHROMA_PATH}", "运行 ingest_bd_docx.py"]
+            hints = [f"设置 {DEEPSEEK_KEY_ENV}", f"确认 {MILVUS_URI}", "运行 ingest_bd_docx.py"]
         st.error(f"初始化失败：{err}\n\n" + "\n".join(f"- {h}" for h in hints))
         st.stop()
 

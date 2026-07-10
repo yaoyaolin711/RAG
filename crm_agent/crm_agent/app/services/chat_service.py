@@ -10,7 +10,7 @@ from app.api.schemas import ChatMode
 from app.services.chat_history import save_chat_turn
 from services.models import UserTag
 from services.user_tags import try_upgrade_user_tag
-from vectorstore import check_chroma_connection
+from vectorstore import check_milvus_connection
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ _unified_agent: UnifiedReplyAgent | None = None
 def _get_unified_agent() -> UnifiedReplyAgent:
     global _unified_agent
     if _unified_agent is None:
-        check_chroma_connection()
+        check_milvus_connection()
         _unified_agent = UnifiedReplyAgent()
     return _unified_agent
 
@@ -126,15 +126,15 @@ def handle_chat(
 
 
 def get_health() -> dict[str, Any]:
-    chroma_status = "connected"
+    milvus_status = "connected"
     try:
-        check_chroma_connection()
+        check_milvus_connection()
     except Exception as e:
-        chroma_status = f"error: {e}"
+        milvus_status = f"error: {e}"
     return {
         "count": 0,
-        "status": "ok" if chroma_status == "connected" else "degraded",
-        "chroma": chroma_status,
+        "status": "ok" if milvus_status == "connected" else "degraded",
+        "milvus": milvus_status,
         "llm": "configured",
         "agent": "unified_reply",
     }

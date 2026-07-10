@@ -79,9 +79,10 @@ RAG_Agent/
 
 ## 环境依赖
 
-- `D:\Chroma` — 向量库（`rag_collection`）
+- `D:\Milvus` — 向量库 Milvus Lite（`rag_collection`，稠密+稀疏混合检索）
+- `D:\BGE-M3` — BGE-M3 本地 Embedding 模型
 - `D:\EmbeddingModel\BAAI\bge-m3` — Embedding 模型
-- API Key 配置见 `crm_agent/crm_agent/keys.py`
+- API Key：设置环境变量 `DEEPSEEK_KEY`（见各子项目 `.env.example`）
 
 ## 知识库入库
 

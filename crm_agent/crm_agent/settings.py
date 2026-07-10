@@ -5,10 +5,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from keys import API_KEY
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 load_dotenv(PROJECT_ROOT / ".env")
+
+DEEPSEEK_KEY_ENV = "DEEPSEEK_KEY"
 
 # LLM 配置（统一使用 DeepSeek 兼容 OpenAI 接口）
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-chat")
@@ -16,23 +16,29 @@ LLM_MODEL_BASE_URL = os.getenv(
     "LLM_MODEL_BASE_URL",
     "https://api.deepseek.com/v1",
 )
-ALIYUN_API_KEY_ENV = "ALIYUN_API_KEY"
+
+
+def get_deepseek_key() -> str:
+    key = os.getenv(DEEPSEEK_KEY_ENV)
+    if not key:
+        raise ValueError(f"未设置环境变量 {DEEPSEEK_KEY_ENV}，请先配置 DeepSeek API Key")
+    return key
 
 
 def get_aliyun_api_key() -> str:
-    return API_KEY
+    """兼容旧调用，实际读取 DEEPSEEK_KEY。"""
+    return get_deepseek_key()
 
 
-# 本地 Embedding 模型（BGE-M3）
-BGE_M3_PATH = os.getenv("BGE_M3_PATH", r"D:\EmbeddingModel\BAAI\bge-m3")
+# 本地 Embedding 模型（BGE-M3，稠密 + 稀疏）
+BGE_M3_PATH = os.getenv("BGE_M3_PATH", r"D:\BGE-M3")
 BGE_M3_DEVICE = os.getenv("BGE_M3_DEVICE", "cpu")
 
-# Chroma 向量数据库
-CHROMA_PATH = os.getenv("CHROMA_PATH", r"D:\Chroma")
-CHROMA_HOST = os.getenv("CHROMA_HOST", "127.0.0.1")
-CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8001"))
-CHROMA_COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "jincheng_mall")
-CHROMA_CLIENT_MODE = os.getenv("CHROMA_CLIENT_MODE", "persistent")
+# Milvus 向量数据库（默认 Milvus Lite 本地文件）
+MILVUS_PATH = os.getenv("MILVUS_PATH", r"D:\Milvus")
+MILVUS_URI = os.getenv("MILVUS_URI", os.path.join(MILVUS_PATH, "milvus.db"))
+MILVUS_TOKEN = os.getenv("MILVUS_TOKEN", "")
+MILVUS_COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "jincheng_mall")
 
 # 知识库路径
 DATA_PATH = os.getenv("DATA_PATH", str(PROJECT_ROOT / "data"))
@@ -47,8 +53,12 @@ RAG_CHUNK_SIZE = 600
 RAG_CHUNK_OVERLAP = 80
 RAG_EMBEDDING_BATCH_SIZE = 32
 EMBEDDING_MODEL_ID = "BAAI/bge-m3"
-RAG_INDEX_MANIFEST_PATH = os.path.join(CHROMA_PATH, "rag_index_manifest.json")
+RAG_INDEX_MANIFEST_PATH = os.path.join(MILVUS_PATH, "rag_index_manifest.json")
 RAG_DATA_PATH = DATA_PATH
+
+# 混合检索权重（稠密 vs 稀疏）
+MILVUS_DENSE_WEIGHT = float(os.getenv("MILVUS_DENSE_WEIGHT", "0.7"))
+MILVUS_SPARSE_WEIGHT = float(os.getenv("MILVUS_SPARSE_WEIGHT", "0.3"))
 
 # 检索参数
 TOP_K = int(os.getenv("RAG_TOP_K", "3"))

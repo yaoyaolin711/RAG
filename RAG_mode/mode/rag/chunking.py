@@ -5,13 +5,13 @@ from __future__ import annotations
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from embedding import get_sentence_transformer
+from embedding import get_bge_m3_model
 from settings import RAG_CHUNK_OVERLAP, RAG_CHUNK_SIZE
 
 
 def _bge_token_length(text: str) -> int:
     """使用 BGE-M3 同款 tokenizer 统计 token 数，与 embedding 模型对齐。"""
-    tokenizer = get_sentence_transformer().tokenizer
+    tokenizer = get_bge_m3_model().tokenizer
     return len(tokenizer.encode(text, add_special_tokens=False))
 
 

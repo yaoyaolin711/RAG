@@ -6,13 +6,13 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from settings import TOP_K
-from vectorstore import get_vector_store, check_chroma_connection
+from vectorstore import get_vector_store, check_milvus_connection
 
 
 class TestVectorStore:
     @pytest.fixture(autouse=True)
     def setup(self):
-        check_chroma_connection()
+        check_milvus_connection()
         self.vector_store = get_vector_store()
 
     def test_similarity_search(self):

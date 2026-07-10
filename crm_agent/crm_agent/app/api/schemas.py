@@ -108,7 +108,7 @@ class ChatResponse(BaseModel):
 class HealthData(BaseModel):
     count: int = 0
     status: str = Field("ok", description="ok / degraded")
-    chroma: str = Field("unknown", description="connected 或 error: ...")
+    milvus: str = Field("unknown", description="connected 或 error: ...")
     llm: str = "configured"
     agent: str = Field("unified_reply", description="当前 Agent 名称")
 

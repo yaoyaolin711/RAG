@@ -13,11 +13,10 @@ openpyxl
 pandas
 langchain
 langchain-community
-langchain-chroma
 langchain-text-splitters
 langchain-openai
-chromadb
-sentence-transformers
+pymilvus>=2.4.0
+FlagEmbedding
 python-docx
 
 # LLM providers

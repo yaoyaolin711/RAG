@@ -3,7 +3,7 @@ import json
 import time
 from typing import Iterator, Optional, Dict, Any
 from app.config import config
-from app.constants import API_KEY
+from settings import get_deepseek_key
 from app.utils.retry import retry
 
 
@@ -15,7 +15,7 @@ class QwenClient:
         provider_config = llm_config.get(active_provider, {})
         self.provider = provider_config.get("provider", active_provider)
         self.base_url = provider_config.get("base_url", "")
-        self.api_key = provider_config.get("api_key") or API_KEY
+        self.api_key = provider_config.get("api_key") or get_deepseek_key()
         self.model = provider_config.get("model", "qwen-plus")
 
         self.temperature = llm_config.get("temperature", 0.7)

@@ -9,9 +9,9 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 from langchain_core.tools import tool
 
 from settings import TOP_K, LLM_MODEL_NAME, LLM_MODEL_BASE_URL, get_aliyun_api_key
-from vectorstore import get_vector_store, check_chroma_connection
+from vectorstore import get_vector_store, check_milvus_connection
 
-check_chroma_connection()
+check_milvus_connection()
 vector_store = get_vector_store()
 
 

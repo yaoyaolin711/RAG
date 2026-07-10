@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from settings import CHROMA_PATH, RAG_INDEX_MANIFEST_PATH
-from vectorstore import get_chroma_client
+from settings import RAG_INDEX_MANIFEST_PATH
+from vectorstore import delete_collection, list_collections
 
 
 def clear_all_collections() -> list[str]:
-    """删除 Chroma 中所有 collection，返回已删除名称列表。"""
-    client = get_chroma_client()
+    """删除 Milvus 中所有 collection，返回已删除名称列表。"""
     deleted: list[str] = []
-    for col in client.list_collections():
-        client.delete_collection(col.name)
-        deleted.append(col.name)
-        print(f"已删除 collection: {col.name}")
+    for name in list_collections():
+        delete_collection(name)
+        deleted.append(name)
+        print(f"已删除 collection: {name}")
     return deleted
 
 

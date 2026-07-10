@@ -1,7 +1,7 @@
 """
 RAG 检索测试示例
 
-演示: Chroma 向量检索 → 可选 LLM 生成回答
+演示: Milvus 混合向量检索 → 可选 LLM 生成回答
 
 用法:
   python scripts/query_rag.py "锦丞 Pro 无线耳机多少钱？"
@@ -24,7 +24,7 @@ from settings import (
     TOP_K,
     get_aliyun_api_key,
 )
-from vectorstore import check_chroma_connection, get_rag_vector_store
+from vectorstore import check_milvus_connection, get_rag_vector_store
 
 
 def retrieve(query: str, k: int = TOP_K):
@@ -68,7 +68,7 @@ def main():
     parser.add_argument("--with-llm", action="store_true", help="检索后调用 LLM 生成回答")
     args = parser.parse_args()
 
-    check_chroma_connection()
+    check_milvus_connection()
     consistent, msg = check_index_consistency()
     print(msg)
     if not consistent:
@@ -93,7 +93,7 @@ def main():
             print(answer)
         except Exception as e:
             print(f"LLM 调用失败: {e}")
-            print("提示: 请设置环境变量 ALIYUN_API_KEY（或替换为 DeepSeek/OpenAI 配置）")
+            print("提示: 请设置环境变量 DEEPSEEK_KEY")
 
 
 if __name__ == "__main__":

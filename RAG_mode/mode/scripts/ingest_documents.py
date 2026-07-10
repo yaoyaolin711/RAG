@@ -14,11 +14,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rag.pipeline import IngestPipeline
 from settings import RAG_DATA_PATH
-from vectorstore import check_chroma_connection
+from vectorstore import check_milvus_connection
 
 
 def main():
-    parser = argparse.ArgumentParser(description="RAG 文档入库：加载 → 切分 → BGE-M3 → Chroma")
+    parser = argparse.ArgumentParser(description="RAG 文档入库：加载 → 切分 → BGE-M3 → Milvus")
     parser.add_argument(
         "--dir",
         default=RAG_DATA_PATH,
@@ -31,7 +31,7 @@ def main():
     )
     args = parser.parse_args()
 
-    check_chroma_connection()
+    check_milvus_connection()
     pipeline = IngestPipeline()
     pipeline.run(data_dir=args.dir, rebuild=args.rebuild)
 

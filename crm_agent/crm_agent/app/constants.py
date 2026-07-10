@@ -1,5 +1,5 @@
 """项目全局常量。"""
 
-from keys import API_KEY
+from settings import get_deepseek_key
 
-__all__ = ["API_KEY"]
+__all__ = ["get_deepseek_key"]

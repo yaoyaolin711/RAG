@@ -2,11 +2,11 @@
 RAG 入库 Pipeline
 ==================
 
-Document Loader → TextSplitter → BGE-M3 Batch Embedding → Chroma PersistentClient
+Document Loader → TextSplitter → BGE-M3 Batch Embedding → Milvus (dense + sparse)
 
     ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐    ┌────────────┐
-    │  Documents  │───▶│ TextSplitter │───▶│ BGE-M3 (batch)  │───▶│   Chroma   │
-    │ txt/md/pdf  │    │ 600tok/80ov  │    │ dense+normalize │    │ persistent │
+    │  Documents  │───▶│ TextSplitter │───▶│ BGE-M3 (batch)  │───▶│   Milvus   │
+    │ txt/md/pdf  │    │ 600tok/80ov  │    │ dense + sparse  │    │ hybrid vec │
     └─────────────┘    └──────────────┘    └─────────────────┘    └────────────┘
                               │
                               ▼
@@ -19,14 +19,14 @@ from dataclasses import dataclass
 
 from langchain_core.documents import Document
 
-from embedding import embed_documents_batch, get_embedding_model_fingerprint
+from embedding import embed_documents_hybrid_batch, get_embedding_model_fingerprint
 from rag.chunking import split_documents
 from rag.index_manifest import IndexManifest, check_index_consistency
 from rag.loaders import load_documents_from_dir, load_documents_from_paths
 from rag.store_utils import clear_all_collections, clear_index_manifest
 from rag.structured_docx import load_structured_docx
 from settings import RAG_COLLECTION_NAME, RAG_EMBEDDING_BATCH_SIZE
-from vectorstore import get_chroma_client
+from vectorstore import delete_collection, ensure_hybrid_collection, upsert_chunks
 
 
 @dataclass
@@ -71,7 +71,7 @@ class IngestPipeline:
             file_paths: 指定文件或目录列表（与 data_dir 二选一）
             rebuild: True 时删除旧 collection 并重建
             structured: True 时对 docx 做结构化切分（不再二次 token 切分）
-            clear_all: True 时清空 Chroma 全部 collection 与 manifest
+            clear_all: True 时清空 Milvus 全部 collection 与 manifest
         """
         if clear_all:
             clear_all_collections()
@@ -101,20 +101,15 @@ class IngestPipeline:
         if not chunks:
             raise ValueError("切分后无有效 chunk，请检查文档内容。")
 
-        client = get_chroma_client()
         if rebuild or clear_all:
             try:
-                client.delete_collection(self.collection_name)
+                delete_collection(self.collection_name)
                 print(f"已删除旧 collection: {self.collection_name}")
             except Exception:
                 pass
 
-        collection = client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"description": "RAG knowledge base", "hnsw:space": "cosine"},
-        )
-
-        self._batch_upsert(collection, chunks)
+        ensure_hybrid_collection(self.collection_name)
+        self._batch_upsert(chunks)
 
         manifest = IndexManifest.current()
         manifest.save()
@@ -129,8 +124,8 @@ class IngestPipeline:
         print(result)
         return result
 
-    def _batch_upsert(self, collection, chunks: list[Document]) -> None:
-        """批量 embedding + 写入 Chroma，每个 chunk 含 text / vector / metadata。"""
+    def _batch_upsert(self, chunks: list[Document]) -> None:
+        """批量 embedding（稠密 + 稀疏）+ 写入 Milvus。"""
         ids: list[str] = []
         texts: list[str] = []
         metadatas: list[dict] = []
@@ -153,16 +148,16 @@ class IngestPipeline:
                     meta[key] = str(value)[:500]
             metadatas.append(meta)
 
-        print(f"开始 batch embedding，共 {len(texts)} 条，batch_size={self.batch_size} ...")
-        embeddings = embed_documents_batch(texts, batch_size=self.batch_size)
+        print(f"开始 batch embedding（稠密+稀疏），共 {len(texts)} 条，batch_size={self.batch_size} ...")
+        dense_vectors, sparse_vectors = embed_documents_hybrid_batch(
+            texts, batch_size=self.batch_size
+        )
 
-        write_batch = 64
-        for start in range(0, len(ids), write_batch):
-            end = start + write_batch
-            collection.upsert(
-                ids=ids[start:end],
-                documents=texts[start:end],
-                embeddings=embeddings[start:end],
-                metadatas=metadatas[start:end],
-            )
-            print(f"  已写入 {min(end, len(ids))}/{len(ids)}")
+        upsert_chunks(
+            self.collection_name,
+            ids,
+            texts,
+            dense_vectors,
+            sparse_vectors,
+            metadatas,
+        )

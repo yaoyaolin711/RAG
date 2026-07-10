@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.wechat_handler import WeChatMessageHandler
-from vectorstore import check_chroma_connection
+from vectorstore import check_milvus_connection
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--message", required=True, help="用户消息")
     args = parser.parse_args()
 
-    check_chroma_connection()
+    check_milvus_connection()
     handler = WeChatMessageHandler()
     response = handler.handle_message(args.user_id, args.tag, args.message)
 

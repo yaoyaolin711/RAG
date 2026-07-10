@@ -2,8 +2,8 @@
 """
 此脚本负责：
 1. 加载 data/ 目录下的锦丞商城知识库文档（TXT）
-2. 使用本地 BGE-M3 向量化
-3. 写入 Chroma 向量数据库（需先启动 chroma run --port 8001）
+2. 使用本地 BGE-M3 向量化（稠密 + 稀疏）
+3. 写入 Milvus 向量数据库
 """
 import os
 import sys
@@ -14,17 +14,14 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from settings import (
-    CHROMA_CLIENT_MODE,
-    CHROMA_COLLECTION_NAME,
-    CHROMA_HOST,
-    CHROMA_PATH,
-    CHROMA_PORT,
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     DATA_PATH,
+    MILVUS_COLLECTION_NAME,
+    MILVUS_URI,
 )
-from embedding import BgeM3ChromaEmbeddingFunction
-from vectorstore import get_chroma_client, check_chroma_connection
+from embedding import embed_documents_hybrid_batch
+from vectorstore import check_milvus_connection, delete_collection, ensure_hybrid_collection, upsert_chunks
 
 KNOWLEDGE_FILES = [
     "product_guide.txt",
@@ -41,21 +38,15 @@ def load_txt(filename: str) -> dict:
 
 
 def main():
-    check_chroma_connection()
-    client = get_chroma_client()
-    ef = BgeM3ChromaEmbeddingFunction()
+    check_milvus_connection()
 
     try:
-        client.delete_collection(CHROMA_COLLECTION_NAME)
-        print(f"已删除旧集合: {CHROMA_COLLECTION_NAME}")
+        delete_collection(MILVUS_COLLECTION_NAME)
+        print(f"已删除旧集合: {MILVUS_COLLECTION_NAME}")
     except Exception:
         pass
 
-    collection = client.create_collection(
-        name=CHROMA_COLLECTION_NAME,
-        embedding_function=ef,
-        metadata={"description": "锦丞商城知识库"},
-    )
+    ensure_hybrid_collection(MILVUS_COLLECTION_NAME)
 
     raw_documents = [load_txt(name) for name in KNOWLEDGE_FILES]
     print(f"共加载了 {len(raw_documents)} 个文档。")
@@ -72,17 +63,25 @@ def main():
             docs.append(Document(page_content=split, metadata=item["metadata"]))
     print(f"共分块了 {len(docs)} 个文档。")
 
-    batch_size = 16
-    for start in range(0, len(docs), batch_size):
-        batch = docs[start : start + batch_size]
-        collection.add(
-            ids=[f"doc_{start + i}" for i in range(len(batch))],
-            documents=[d.page_content for d in batch],
-            metadatas=[d.metadata for d in batch],
-        )
-        print(f"已写入 {min(start + batch_size, len(docs))}/{len(docs)}")
+    ids = [f"doc_{i}" for i in range(len(docs))]
+    texts = [d.page_content for d in docs]
+    metadatas = [
+        {
+            "source": d.metadata.get("source", ""),
+            "chunk_id": ids[i],
+            "chunk_index": i,
+            "page": 0,
+            "section": "",
+            "chunk_type": "",
+        }
+        for i, d in enumerate(docs)
+    ]
 
-    print(f"向量库构建完成: mode={CHROMA_CLIENT_MODE}, path={CHROMA_PATH}, collection={CHROMA_COLLECTION_NAME}")
+    print("开始 BGE-M3 稠密+稀疏向量化...")
+    dense_vectors, sparse_vectors = embed_documents_hybrid_batch(texts)
+    upsert_chunks(MILVUS_COLLECTION_NAME, ids, texts, dense_vectors, sparse_vectors, metadatas)
+
+    print(f"向量库构建完成: uri={MILVUS_URI}, collection={MILVUS_COLLECTION_NAME}")
 
 
 if __name__ == "__main__":

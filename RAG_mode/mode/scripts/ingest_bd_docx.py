@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rag.pipeline import IngestPipeline
 from settings import DATA_PATH
-from vectorstore import check_chroma_connection
+from vectorstore import check_milvus_connection
 
 DEFAULT_DOCX = r"d:\xwechat_files\wxid_i3hlr9ja1jug22_804f\msg\file\2026-07\BD筛选提示词.docx"
 
@@ -33,13 +33,13 @@ def main():
         shutil.copy2(args.file, target)
         print(f"已复制文档到: {target}")
 
-    check_chroma_connection()
+    check_milvus_connection()
     pipeline = IngestPipeline()
     result = pipeline.run(
         file_paths=[target],
         structured=True,
         rebuild=True,
-        clear_all=True,
+        clear_all=False,
     )
 
     print("\n=== 入库摘要 ===")
