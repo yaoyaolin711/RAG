@@ -11,6 +11,7 @@ import streamlit as st
 
 from settings import (
     DEEPSEEK_KEY_ENV,
+    DEEPSEEK_KEY_FILE,
     KB_DOC_NAME,
     LLM_MODEL_NAME,
     MILVUS_URI,
@@ -533,7 +534,7 @@ def render_sidebar():
 
         st.markdown("---")
         st.markdown("### ⚙️ 系统信息")
-        api_ok = "已配置" if os.getenv(DEEPSEEK_KEY_ENV) else "未检测到"
+        api_ok = "已配置" if (os.getenv(DEEPSEEK_KEY_ENV) or Path(DEEPSEEK_KEY_FILE).is_file()) else "未检测到"
         st.markdown(
             f"""
             <div class="jc-tip">🔑 API Key<br><b>{api_ok}</b></div>
@@ -618,7 +619,7 @@ def main():
         err = str(e)
         hints = []
         if "DEEPSEEK_KEY" in err or ("环境变量" in err and isinstance(e, ValueError)):
-            hints.append(f'请设置 $env:DEEPSEEK_KEY="你的Key" 后重启 Streamlit')
+            hints.append(f'请设置 $env:DEEPSEEK_KEY="你的Key"，或写入 {DEEPSEEK_KEY_FILE}')
         if "Milvus" in err or "milvus" in err.lower():
             hints.append(f"请确认 Milvus 路径存在：{MILVUS_URI}")
             hints.append("请运行：python scripts/ingest_bd_docx.py")
@@ -645,7 +646,19 @@ main()
 if __name__ == "__main__":
     import subprocess
 
-    from streamlit.runtime.scriptrunner import get_script_run_ctx
+    from settings import STREAMLIT_PORT
 
     if get_script_run_ctx() is None:
-        subprocess.run([sys.executable, "-m", "streamlit", "run", __file__])
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                __file__,
+                "--server.port",
+                str(STREAMLIT_PORT),
+                "--server.headless",
+                "true",
+            ]
+        )

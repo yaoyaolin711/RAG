@@ -4,7 +4,8 @@ from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ROOT))
-API_PORT = int(os.getenv("API_PORT", "8002"))
+
+from settings import API_PORT
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request

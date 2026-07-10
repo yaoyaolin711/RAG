@@ -1,9 +1,9 @@
 @echo off
 cd /d "%~dp0crm_agent\crm_agent"
-set API_PORT=8002
+set API_PORT=7120
 echo ========================================
 echo   RAG Agent — FastAPI
-echo   文档    http://localhost:8002/docs
+echo   文档    http://localhost:7120/docs
 echo ========================================
 echo.
 if exist venv\Scripts\activate.bat (

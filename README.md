@@ -10,7 +10,7 @@ venv\Scripts\activate
 python main.py
 ```
 
-- 交互式文档：http://localhost:8002/docs
+- 交互式文档：http://localhost:7120/docs
 - 接口文档：[API.md](./API.md)
 
 ## 统一 API（推荐）
@@ -18,7 +18,7 @@ python main.py
 所有能力通过 **`POST /api/v1/chat`** 统一 Agent 调用：
 
 ```bash
-curl -X POST http://localhost:8002/api/v1/chat \
+curl -X POST http://localhost:7120/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "佣金能给到多少？",
@@ -66,7 +66,7 @@ curl -X POST http://localhost:8002/api/v1/chat \
 RAG_Agent/
 ├── API.md                   # 接口文档
 ├── crm_agent/crm_agent/
-│   ├── main.py              # API 入口 :8002（8000 常被占用）
+│   ├── main.py              # API 入口 :7120
 │   ├── app/api/v1.py        # 统一接口
 │   ├── app/agents/          # UnifiedReplyAgent
 │   ├── app/services/        # 聊天编排、历史对话
@@ -76,6 +76,15 @@ RAG_Agent/
 ```
 
 对外仅通过 **`POST /api/v1/chat`** 完成全流程，无需额外前端。
+
+## Streamlit 模拟台（RAG_mode）
+
+```bash
+cd RAG_mode/mode
+streamlit run app.py
+```
+
+- 访问地址：http://localhost:7121
 
 ## 环境依赖
 

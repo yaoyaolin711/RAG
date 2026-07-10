@@ -2,18 +2,34 @@
 # 锦丞商城 RAG Demo 配置文件
 
 import os
+from pathlib import Path
 
 DEEPSEEK_KEY_ENV = "DEEPSEEK_KEY"
+DEEPSEEK_KEY_FILE = os.getenv("DEEPSEEK_KEY_FILE", r"D:\DEEPSEEK_KEY.txt")
 
 # LLM 配置（DeepSeek 兼容 OpenAI 接口）
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-chat")
 LLM_MODEL_BASE_URL = os.getenv("LLM_MODEL_BASE_URL", "https://api.deepseek.com/v1")
 
+# 服务端口（避免 3/5/8 开头）
+STREAMLIT_PORT = int(os.getenv("STREAMLIT_PORT", "7121"))
+
+
+def _read_key_from_file(path: str | Path) -> str | None:
+    file_path = Path(path)
+    if not file_path.is_file():
+        return None
+    content = file_path.read_text(encoding="utf-8").strip()
+    return content or None
+
 
 def get_deepseek_key() -> str:
-    key = os.getenv(DEEPSEEK_KEY_ENV)
+    key = os.getenv(DEEPSEEK_KEY_ENV) or _read_key_from_file(DEEPSEEK_KEY_FILE)
     if not key:
-        raise ValueError(f"未设置环境变量 {DEEPSEEK_KEY_ENV}，请先配置 DeepSeek API Key")
+        raise ValueError(
+            f"未找到 DeepSeek API Key，请设置环境变量 {DEEPSEEK_KEY_ENV} "
+            f"或在 {DEEPSEEK_KEY_FILE} 中写入密钥"
+        )
     return key
 
 
